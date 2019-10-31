@@ -19,26 +19,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  ******************************************************************************/
-#include "libmp4parser.h"
+#include "libhomekit.h"
+#include "accessory.h"
 #include <stdio.h>
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-int main(int argc, char* argv[])
+
+
+int main(int argc, char **argv)
 {
-    if (argc < 2) {
-        printf("Invalid argument, useage: \n mp4parser /path/to/mp4file \n");
-        return -1;
+    camera_accessory_init();
+    while (1) {
+        sleep(1);
     }
-    struct mp4_parser *mp = mp4_parser_create(argv[1]);
-    uint64_t duration = 0;
-    uint32_t w, h;
-    mp4_get_duration(mp, &duration);
-    printf("duration = %" PRIu64 "\n", duration);
-    mp4_get_resolution(mp, &w, &h);
-    printf("resolution = %dx%d\n", (int)w, (int)h);
-    mp4_parser_destroy(mp);
     return 0;
 }
-
-

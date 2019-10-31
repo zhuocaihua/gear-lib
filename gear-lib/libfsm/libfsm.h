@@ -19,17 +19,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  ******************************************************************************/
-#include "libuio_internal.h"
-#include "libuio.h"
-#include <stdio.h>
+#ifndef LIBFSM_H
+#define LIBFSM_H
+
 #include <stdlib.h>
+#include <stdbool.h>
+#include <pthread.h>
 
-int uio_open(struct uio_info_t* info)
-{
-	return 0;
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*
+ *      |------|  event1 |------|
+ *      |state1| ------> |state2|
+ *      |------| <------ |------|
+ *        | /|\   event2   | /|\
+ *  event3|  | event4      |  |
+ *       \|/ |             |  |
+ *      |------|   event5  |  | event6
+ *      |state3|<-----------  |
+ *      |------|--------------
+ */
+
+typedef int (*fsm_event_handle)(void *arg);
+
+struct fsm_event_table {
+    int current_state;
+    int trigger_event;
+    int next_state;
+    fsm_event_handle do_action;
+};
+
+struct fsm {
+    int curr_state;
+    struct fsm_event_table *table;
+    int table_num;
+    pthread_mutex_t mutex;
+};
+
+struct fsm *fsm_create();
+void fsm_destroy(struct fsm *fsm);
+
+int fsm_state_init(struct fsm *fsm, int state);
+int fsm_action(struct fsm *fsm, int event_id, void *args);
+int fsm_traval(struct fsm *fsm);
+
+#ifdef __cplusplus
 }
-
-void uio_close(struct uio_info_t* info)
-{
-
-}
+#endif
+#endif

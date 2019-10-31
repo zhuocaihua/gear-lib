@@ -19,37 +19,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  ******************************************************************************/
-#ifndef LIBUIO_INTERNAL_H
-#define LIBUIO_INTERNAL_H
-
-#include "libuio.h"
-#include <sys/stat.h>
+#ifndef LIBHOMEKIT_H
+#define LIBHOMEKIT_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct uio_map_t {
-	unsigned long addr;
-	size_t size;
-	size_t offset;
-	char *name;
-	void *map;
-};
-
-struct uio_info_t {
-	char *path;
-	char *name;
-	char *version;
-	struct uio_map_t *maps;
-	char *devname;
-	dev_t devid;
-	int maxmap;
-	int fd;
-};
-
-
-int uio_open (struct uio_info_t* info);
 
 
 

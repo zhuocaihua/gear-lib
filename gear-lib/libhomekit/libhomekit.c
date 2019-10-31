@@ -19,21 +19,4 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  ******************************************************************************/
-#ifndef LIBUIO_H
-#define LIBUIO_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-struct uio_info_t;
-
-int uio_open(struct uio_info_t* info);
-void uio_close(struct uio_info_t* info);
-
-
-
-#ifdef __cplusplus
-}
-#endif
-#endif
+#include "libhomekit.h"
