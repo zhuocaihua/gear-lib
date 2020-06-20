@@ -20,9 +20,9 @@
  * SOFTWARE.
  ******************************************************************************/
 #include "rtp.h"
-#include <liblog.h>
-#include <libskt.h>
-#include <libmacro.h>
+#include <gear-lib/liblog.h>
+#include <gear-lib/libskt.h>
+#include <gear-lib/libmacro.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -87,6 +87,28 @@ static inline void nbo_write_rtp_header(uint8_t *ptr, const rtp_header_t *header
     nbo_w32(ptr+8, header->ssrc);
 }
 
+static void rtp_packet_dump_info(const struct rtp_packet *pkt)
+{
+    logd("rtp_packet header:\n");
+    logd("version:      %d\n", pkt->header.v);
+    logd("padding:      %d\n", pkt->header.p);
+    logd("extersion:    %d\n", pkt->header.x);
+    logd("csrc count:   %d\n", pkt->header.cc);
+    logd("marker bit:   %d\n", pkt->header.m);
+    logd("payload type: %d\n", pkt->header.pt);
+    logd("sequence:     %d\n", pkt->header.seq);
+    logd("timestamp:    %d\n", pkt->header.timestamp);
+    logd("ssrc:         %d\n", pkt->header.ssrc);
+    logd("rtp_packet body:\n");
+    logd("csrc[0]:      %d\n", pkt->csrc[0]);
+    logd("extension:    %p\n", pkt->extension);
+    logd("extlen:       %d\n", pkt->extlen);
+    logd("reserved:     %d\n", pkt->reserved);
+    logd("payload:      %p\n", pkt->payload);
+    logd("payloadlen:   %d\n", pkt->payloadlen);
+    logd("size:         %d\n", pkt->size);
+}
+
 int rtp_packet_serialize_header(const struct rtp_packet *pkt, void* data, int bytes)
 {
     int hdrlen;
@@ -132,6 +154,8 @@ int rtp_packet_serialize(const struct rtp_packet *pkt, void* data, int bytes)
         return -1;
 
     memcpy(((uint8_t*)data) + hdrlen, pkt->payload, pkt->payloadlen);
+
+    rtp_packet_dump_info(pkt);
     return hdrlen + pkt->payloadlen;
 }
 
@@ -199,7 +223,7 @@ int rtp_packet_deserialize(struct rtp_packet *pkt, const void* data, int bytes)
     return 0;
 }
 
-struct rtp_packet *rtp_packet_create(int size, uint8_t pt, uint16_t seq, uint32_t ssrc)
+struct rtp_packet *rtp_packet_create(uint8_t pt, int size, uint16_t seq, uint32_t ssrc)
 {
     struct rtp_packet *pkt = CALLOC(1, struct rtp_packet);
     if (!pkt) return NULL;
@@ -328,6 +352,7 @@ void rtp_socket_destroy(struct rtp_socket *s)
 
 ssize_t rtp_sendto(struct rtp_socket *s, const char *ip, uint16_t port, const void *buf, size_t len)
 {
+    logd("skt_sendto %s:%d len=%d\n", ip, port, len);
     return skt_sendto(s->rtp_fd, ip, port, buf, len);
 }
 
@@ -390,13 +415,13 @@ int rtp_packet_getsize()
 }
 
 static const struct rtp_payload_type rtp_payload_types[] = {
-    {0,   "PCMU",   MEDIA_TYPE_AUDIO,   8000,  1},
+    {RTP_PT_PCMU,   "PCMU",   MEDIA_TYPE_AUDIO,   8000,  1},
     {3,   "GSM",    MEDIA_TYPE_AUDIO,   8000,  1},
     {4,   "G723",   MEDIA_TYPE_AUDIO,   8000,  1},
     {5,   "DVI4",   MEDIA_TYPE_AUDIO,   8000,  1},
     {6,   "DVI4",   MEDIA_TYPE_AUDIO,   16000, 1},
     {7,   "LPC",    MEDIA_TYPE_AUDIO,   8000,  1},
-    {8,   "PCMA",   MEDIA_TYPE_AUDIO,   8000,  1},
+    {RTP_PT_PCMA,   "PCMA",   MEDIA_TYPE_AUDIO,   8000,  1},
     {9,   "G722",   MEDIA_TYPE_AUDIO,   8000,  1},
     {10,  "L16",    MEDIA_TYPE_AUDIO,   44100, 2},
     {11,  "L16",    MEDIA_TYPE_AUDIO,   44100, 1},
@@ -408,16 +433,15 @@ static const struct rtp_payload_type rtp_payload_types[] = {
     {17,  "DVI4",   MEDIA_TYPE_AUDIO,   22050, 1},
     {18,  "G729",   MEDIA_TYPE_AUDIO,   8000,  1},
     {25,  "CelB",   MEDIA_TYPE_VIDEO,   90000, 0},
-    {26,  "JPEG",   MEDIA_TYPE_VIDEO,   90000, 0},
+    {RTP_PT_JPEG,  "JPEG",   MEDIA_TYPE_VIDEO,   90000, 0},
     {28,  "nv",     MEDIA_TYPE_VIDEO,   90000, 0},
     {31,  "H261",   MEDIA_TYPE_VIDEO,   90000, 0},
     {32,  "MPV",    MEDIA_TYPE_VIDEO,   90000, 0},
     {32,  "MPV",    MEDIA_TYPE_VIDEO,   90000, 0},
     {33,  "MP2T",   MEDIA_TYPE_DATA,    90000, 0},
     {34,  "H263",   MEDIA_TYPE_VIDEO,   90000, 0},
-    {96,  "H264",   MEDIA_TYPE_VIDEO,   90000, 0},
-    {97,  "H265",   MEDIA_TYPE_VIDEO,   90000, 0},
-    {-1,  "",       MEDIA_TYPE_UNKNOWN, -1,    0}
+    {RTP_PT_H264,  "H264",   MEDIA_TYPE_VIDEO,   90000, 0},
+    {RTP_PT_H265,  "H265",   MEDIA_TYPE_VIDEO,   90000, 0},
 };
 
 const struct rtp_payload_type* rtp_payload_type_find(int payload)
@@ -578,15 +602,13 @@ int rtp_payload_find(int payload, const char* encoding, struct rtp_payload_deleg
 
 void rtcp_rr_unpack(rtcp_header_t *header, const uint8_t* ptr)
 {
-    uint32_t ssrc, i;
+    uint32_t i;
     rtcp_rb_t rb;
 
     if (header->length * 4 < sizeof(rtcp_rr_t) + header->rc * sizeof(rtcp_rb_t)) {
         loge("error occur\n");
         return;
     }
-    ssrc = nbo_r32(ptr);
-    logi("Received RTCP packet from %08X\n", ssrc);
 
     ptr += sizeof(rtcp_rr_t);
     for (i = 0; i < header->rc; i++, ptr += sizeof(rtcp_rb_t)) {

@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include <netinet/in.h>
+#include <gear-lib/libmedia-io.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -165,7 +166,7 @@ struct rtp_socket {
 
 int rtp_ssrc(void);
 
-struct rtp_packet *rtp_packet_create(int size, uint8_t pt, uint16_t seq, uint32_t ssrc);
+struct rtp_packet *rtp_packet_create(uint8_t pt, int size, uint16_t seq, uint32_t ssrc);
 void rtp_packet_destroy(struct rtp_packet *pkt);
 int rtp_packet_serialize_header(const struct rtp_packet *pkt, void* data, int bytes);
 int rtp_packet_serialize(const struct rtp_packet *pkt, void* data, int bytes);
@@ -188,16 +189,6 @@ ssize_t rtp_recvfrom(struct rtp_socket *s, uint32_t *ip, uint16_t *port, void *b
 enum rtp_role { 
     RTP_SENDER   = 1, /// send RTP packet
     RTP_RECEIVER = 2, /// receive RTP packet
-};
-
-enum media_type {
-    MEDIA_TYPE_UNKNOWN = -1,
-    MEDIA_TYPE_VIDEO,
-    MEDIA_TYPE_AUDIO,
-    MEDIA_TYPE_DATA,
-    MEDIA_TYPE_SUBTITLE,
-    MEDIA_TYPE_ATTACHMENT,
-    MEDIA_TYPE_NB
 };
 
 struct rtp_payload_type {
@@ -283,6 +274,15 @@ struct rtp_context *rtp_create(int frequence, int boundwidth);
 int rtp_payload_h264_encode(struct rtp_socket *sock, struct rtp_packet *pkt, const void* h264, int bytes, uint32_t timestamp);
 
 int rtcp_parse(/*struct rtp_context *ctx, */char* data, size_t bytes);
+
+enum rtp_payload_type_value {
+    RTP_PT_PCMU  = 0,
+    RTP_PT_PCMA  = 8,
+    RTP_PT_JPEG  = 26,
+    RTP_PT_H264  = 96,
+    RTP_PT_H265  = 97,
+};
+
 #ifdef __cplusplus
 }
 #endif

@@ -22,11 +22,12 @@
 #include "transport_session.h"
 #include "media_source.h"
 #include "rtp.h"
-#include <liblog.h>
-#include <libtime.h>
-#include <libdict.h>
-#include <libmacro.h>
-#include <libgevent.h>
+#include <gear-lib/liblog.h>
+#include <gear-lib/libtime.h>
+#include <gear-lib/libdict.h>
+#include <gear-lib/libmacro.h>
+#include <gear-lib/libgevent.h>
+#include <gear-lib/libmedia-io.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -90,6 +91,12 @@ struct transport_session *transport_session_lookup(void *pool, char *key)
     return (struct transport_session *)dict_get((dict *)pool, key, NULL);
 }
 
+#define MILLISECOND_DEN 1000
+
+static int32_t get_ms_time_v(struct video_packet *packet, int64_t val)
+{
+    return (int32_t)(val * MILLISECOND_DEN / packet->encoder.timebase.den);
+}
 static void *send_thread(struct thread *t, void *ptr)
 {
     struct transport_session *ts = (struct transport_session *)ptr;
@@ -102,23 +109,41 @@ static void *send_thread(struct thread *t, void *ptr)
     }
     ms->is_active = true;
     unsigned int ssrc = (unsigned int)rtp_ssrc();
-    uint64_t pts = time_get_msec();
+    uint64_t pts = time_msec();
     unsigned int seq = ssrc;
+    logd("rtp send thread %s created\n", t->name);
     while (t->run) {
-        if (-1 == ms->read(ms, &data, &len)) {
+        if (-1 == ms->read(ms, &data, &len) || data == NULL) {
             loge("read failed!\n");
             sleep(1);
             continue;
         }
-        struct rtp_packet *pkt = rtp_packet_create(len, 96, seq, ssrc);
-        rtp_payload_h264_encode(ts->rtp->sock, pkt, data, len, pts);
-        pts += 3000;
-        seq = pkt->header.seq;
-        rtp_packet_destroy(pkt);
-        //usleep(500*1000);
-
+        struct media_packet *pkt = data;
+        switch (pkt->type) {
+        case MEDIA_TYPE_AUDIO:
+            logd("MEDIA_TYPE_AUDIO\n");
+            break;
+        case MEDIA_TYPE_VIDEO: {
+            logd("MEDIA_TYPE_VIDEO\n");
+            struct video_packet *vpkt = pkt->video;
+            struct rtp_packet *pkt = rtp_packet_create(RTP_PT_H264, vpkt->size, seq, ssrc);
+            if (!pkt) {
+                loge("rtp_packet_create failed!\n");
+                break;
+            }
+            pts = get_ms_time_v(vpkt, vpkt->dts);
+            logd("rtp_packet_create video size=%d, pts=%d\n", vpkt->size, pts);
+            rtp_payload_h264_encode(ts->rtp->sock, pkt, vpkt->data, vpkt->size, pts);
+            seq = pkt->header.seq;
+            rtp_packet_destroy(pkt);
+        } break;
+        default:
+            loge("unsupport media type!\n");
+            break;
+        }
     }
     ms->is_active = false;
+    ms->close(ms);
     return NULL;
 }
 
@@ -160,10 +185,11 @@ int transport_session_start(struct transport_session *ts, struct media_source *m
         loge("event_add failed!\n");
         gevent_destroy(e);
     }
-    loge("rtcp_fd = %d\n", ts->rtp->sock->rtcp_fd);
     ts->media_source = ms;
     ts->ev_thread = thread_create(event_thread, ts);
+    thread_set_name(ts->ev_thread, "event_thread");
     ts->thread = thread_create(send_thread, ts);
-    logi("session_id = %d\n", ts->session_id);
+    thread_set_name(ts->thread, "send_thread");
+    logi("session_id = %d, name=%s\n", ts->session_id, ts->media_source->name);
     return 0;
 }

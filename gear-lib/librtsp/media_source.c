@@ -22,9 +22,9 @@
 
 #include "media_source.h"
 #include "sdp.h"
-#include <libdict.h>
-#include <libmacro.h>
-#include <libatomic.h>
+#include <gear-lib/libdict.h>
+#include <gear-lib/libmacro.h>
+#include <gear-lib/libatomic.h>
 #include <strings.h>
 
 #define REGISTER_MEDIA_SOURCE(x)                                               \
@@ -53,7 +53,9 @@ void media_source_register_all(void)
     registered = 1;
 
     REGISTER_MEDIA_SOURCE(h264);
+#ifdef ENABLE_LIVEVIEW
     REGISTER_MEDIA_SOURCE(uvc);
+#endif
 }
 
 struct media_source *rtsp_media_source_lookup(char *name)
@@ -64,4 +66,12 @@ struct media_source *rtsp_media_source_lookup(char *name)
             break;
     }
     return p;
+}
+
+bool rtsp_media_source_alive(struct media_source *ms)
+{
+    if (!ms) {
+        return false;
+    }
+    return ms->is_active;
 }

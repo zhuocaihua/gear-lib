@@ -22,28 +22,35 @@
 #ifndef LIBUVC_H
 #define LIBUVC_H
 
+#include <gear-lib/libposix.h>
+#include <gear-lib/libmedia-io.h>
 #include <stdio.h>
 #include <stdint.h>
-#if defined (__linux__) || defined (__CYGWIN__)
-#include <sys/uio.h>
+#if defined (OS_LINUX)
 #define __USE_LINUX_IOCTL_DEFS
 #include <sys/ioctl.h>
-#elif defined (__WIN32__) || defined (WIN32) || defined (_MSC_VER)
-#include "libposix4win.h"
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct uvc_ctx;
 struct uvc_ops;
+typedef int (video_frame_cb)(struct uvc_ctx *c, struct video_frame *frame);
+
+struct uvc_config {
+    uint32_t width;
+    uint32_t height;
+    rational_t fps;
+    enum pixel_format format;
+};
 
 struct uvc_ctx {
     int fd;
-    int width;
-    int height;
-    struct timeval timestamp;
+    struct uvc_config conf;
     struct uvc_ops *ops;
+    video_frame_cb *on_video_frame;
     void *opaque;
 };
 
@@ -61,21 +68,28 @@ struct video_ctrl {
 #define UVC_SET_CTRL _IOWR('V',  1, struct video_ctrl)
 
 struct uvc_ops {
-    void *(*open)(struct uvc_ctx *uvc, const char *dev, int width, int height);
+    void *(*open)(struct uvc_ctx *uvc, const char *dev, struct uvc_config *conf);
     void (*close)(struct uvc_ctx *c);
-    int (*read)(struct uvc_ctx *c, void *buf, size_t len);
-    int (*write)(struct uvc_ctx *c, void *buf, size_t len);
-    int (*ioctl)(struct uvc_ctx *c, uint32_t cid, int value);
-    int (*print_info)(struct uvc_ctx *c);
+    int (*ioctl)(struct uvc_ctx *c, unsigned long int cmd, ...);
+    int (*start_stream)(struct uvc_ctx *c);
+    int (*stop_stream)(struct uvc_ctx *c);
+    int (*query_frame)(struct uvc_ctx *c, struct video_frame *frame);
 };
 
-
-struct uvc_ctx *uvc_open(const char *dev, int width, int height);
-int uvc_print_info(struct uvc_ctx *c);
-int uvc_read(struct uvc_ctx *c, void *buf, size_t len);
-int uvc_ioctl(struct uvc_ctx *c, uint32_t cmd, void *buf, int len);
+struct uvc_ctx *uvc_open(const char *dev, struct uvc_config *conf);
+int uvc_ioctl(struct uvc_ctx *c, unsigned long int cmd, ...);
 void uvc_close(struct uvc_ctx *c);
 
+/*
+ * active query frame one by one
+ */
+int uvc_query_frame(struct uvc_ctx *c, struct video_frame *frame);
+
+/*
+ * passive get frame when cb is set, otherwise need query frame one by one
+ */
+int uvc_start_stream(struct uvc_ctx *uvc, video_frame_cb *cb);
+int uvc_stop_stream(struct uvc_ctx *uvc);
 
 #ifdef __cplusplus
 }

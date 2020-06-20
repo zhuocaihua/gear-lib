@@ -19,7 +19,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  ******************************************************************************/
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include "libmacro.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,7 +34,7 @@
 #include <signal.h>
 #include <errno.h>
 
-void *memdup(void *src, size_t len)
+void *memdup(const void *src, size_t len)
 {
     void *dst = calloc(1, len);
     if (LIKELY(dst != NULL)) {

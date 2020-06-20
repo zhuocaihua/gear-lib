@@ -26,69 +26,94 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <stdarg.h>
 
-#if defined (__linux__) || defined (__CYGWIN__)
+#if defined (OS_LINUX)
 extern struct uvc_ops v4l2_ops;
-#elif defined (__WIN32__) || defined (WIN32) || defined (_MSC_VER)
+#elif defined (OS_WINDOWS)
 extern struct uvc_ops dshow_ops;
 #endif
 
 static struct uvc_ops *uvc_ops[] = {
-#if defined (__linux__) || defined (__CYGWIN__)
+#if defined (OS_LINUX)
     &v4l2_ops,
-#elif defined (__WIN32__) || defined (WIN32) || defined (_MSC_VER)
+#elif defined (OS_WINDOWS)
     &dshow_ops,
 #endif
     NULL
 };
 
-int uvc_print_info(struct uvc_ctx *c)
+struct uvc_ctx *uvc_open(const char *dev, struct uvc_config *conf)
 {
-    return c->ops->print_info(c);
-}
-
-struct uvc_ctx *uvc_open(const char *dev, int width, int height)
-{
-    struct uvc_ctx *uvc = (struct uvc_ctx *)calloc(1, sizeof(struct uvc_ctx));
+    struct uvc_ctx *uvc;
+    if (!dev || !conf) {
+        printf("invalid paraments!\n");
+        return NULL;
+    }
+    uvc = (struct uvc_ctx *)calloc(1, sizeof(struct uvc_ctx));
     if (!uvc) {
         printf("malloc failed!\n");
         return NULL;
     }
     uvc->ops = uvc_ops[0];
-    uvc->opaque = uvc->ops->open(uvc, dev, width, height);
+    uvc->opaque = uvc->ops->open(uvc, dev, conf);
     if (!uvc->opaque) {
         printf("open %s failed!\n", dev);
         goto failed;
     }
-    uvc->width = width;
-    uvc->height = height;
     return uvc;
 failed:
     free(uvc);
     return NULL;
 }
 
-int uvc_read(struct uvc_ctx *uvc, void *buf, size_t len)
+int uvc_query_frame(struct uvc_ctx *uvc, struct video_frame *frame)
 {
-    if (-1 == uvc->ops->write(uvc, NULL, 0)) {
+    if (!uvc || !frame) {
+        printf("invalid paraments!\n");
         return -1;
     }
-    return uvc->ops->read(uvc, buf, len);
+    return uvc->ops->query_frame(uvc, frame);
 }
 
-int uvc_ioctl(struct uvc_ctx *uvc, uint32_t cmd, void *buf, int len)
+int uvc_start_stream(struct uvc_ctx *uvc, video_frame_cb *cb)
 {
-    struct video_ctrl *vctrl;
+    if (!uvc) {
+        printf("invalid paraments!\n");
+        return -1;
+    }
+    uvc->on_video_frame = cb;
+    return uvc->ops->start_stream(uvc);
+}
+
+int uvc_stop_stream(struct uvc_ctx *uvc)
+{
+    if (!uvc) {
+        printf("invalid paraments!\n");
+        return -1;
+    }
+    return uvc->ops->stop_stream(uvc);
+}
+
+int uvc_ioctl(struct uvc_ctx *uvc, unsigned long int cmd, ...)
+{
+    void *arg;
+    va_list ap;
+    va_start(ap, cmd);
+    arg = va_arg(ap, void *);
+    va_end(ap);
+
     switch (cmd) {
     case UVC_GET_CAP:
-        uvc->ops->print_info(uvc);
+        uvc->ops->ioctl(uvc, cmd, NULL);
         break;
-    case UVC_SET_CTRL:
-        vctrl = (struct video_ctrl *)buf;
+    case UVC_SET_CTRL: {
+        struct video_ctrl *vctrl;
+        vctrl = (struct video_ctrl *)arg;
         uvc->ops->ioctl(uvc, vctrl->cmd, vctrl->val);
-        break;
+    } break;
     default:
-        printf("cmd %d not supported yet!\n", cmd);
+        printf("cmd %lu not supported yet!\n", cmd);
         break;
     }
     return 0;
@@ -97,6 +122,7 @@ int uvc_ioctl(struct uvc_ctx *uvc, uint32_t cmd, void *buf, int len)
 void uvc_close(struct uvc_ctx *uvc)
 {
     if (!uvc) {
+        printf("invalid paraments!\n");
         return;
     }
     uvc->ops->close(uvc);

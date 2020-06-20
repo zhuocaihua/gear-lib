@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined (__linux__) || defined (__CYGWIN__) || defined (__APPLE__)
+#if defined (__linux__) || defined (__CYGWIN__) || defined (__APPLE__) || defined (FREERTOS)
 #include <stdbool.h>
 #include <sys/uio.h>
 #include "kernel_list.h"
@@ -119,7 +119,7 @@ extern "C" {
 #endif
 #endif
 
-void *memdup(void *src, size_t len);
+void *memdup(const void *src, size_t len);
 struct iovec *iovec_create(size_t len);
 void iovec_destroy(struct iovec *);
 

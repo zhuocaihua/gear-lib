@@ -24,12 +24,15 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#if defined (__linux__) || defined (__CYGWIN__)
 #include <stdbool.h>
+#if defined (__linux__) || defined (__CYGWIN__)
+#define _GNU_SOURCE
 #include <pthread.h>
 #include <semaphore.h>
 #elif defined (__WIN32__) || defined (WIN32) || defined (_MSC_VER)
 #include "libposix4win.h"
+#elif defined (FREERTOS)
+#include "libposix4rtos/libposix4rtos.h"
 #endif
 
 #ifdef __cplusplus
@@ -37,11 +40,11 @@ extern "C" {
 #endif
 
 enum lock_type {
-    LOCK_SPIN = 0,
-    LOCK_MUTEX,
-    LOCK_COND,
-    LOCK_RW,
-    LOCK_SEM,
+    THREAD_LOCK_SPIN = 0,
+    THREAD_LOCK_MUTEX,
+    THREAD_LOCK_COND,
+    THREAD_LOCK_RW,
+    THREAD_LOCK_SEM,
 };
 
 /*
@@ -90,6 +93,9 @@ void rwlock_deinit(rw_lock_t *lock);
 /*
  * sem lock implemented by Unnamed semaphores (memory-based semaphores) APIs
  */
+#if defined (FREERTOS)
+typedef void* sem_t;
+#endif
 typedef sem_t sem_lock_t;
 int sem_lock_init(sem_lock_t *lock);
 int sem_lock_wait(sem_lock_t *lock, int64_t ms);
@@ -97,10 +103,12 @@ int sem_lock_trywait(sem_lock_t *lock);
 int sem_lock_signal(sem_lock_t *lock);
 void sem_lock_deinit(sem_lock_t *lock);
 
+#define THREAD_NAME_LEN 16
 
 typedef struct thread {
     pthread_t tid;
     pthread_attr_t attr;
+    char name[THREAD_NAME_LEN];
     enum lock_type type;
     union {
         spin_lock_t spin;
@@ -115,7 +123,8 @@ typedef struct thread {
 
 struct thread *thread_create(void *(*func)(struct thread *, void *), void *arg, ...);
 void thread_destroy(struct thread *t);
-void thread_info(struct thread *t);
+void thread_get_info(struct thread *t);
+int thread_set_name(struct thread *t, const char *name);
 
 int thread_lock(struct thread *t);
 int thread_unlock(struct thread *t);

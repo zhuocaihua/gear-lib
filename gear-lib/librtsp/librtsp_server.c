@@ -26,11 +26,9 @@
 #include <time.h>
 #include <errno.h>
 #include <sys/time.h>
-#include <libmacro.h>
-#include <liblog.h>
-#include <libgevent.h>
-#include <libthread.h>
-#include <libdict.h>
+#include <gear-lib/libmacro.h>
+#include <gear-lib/liblog.h>
+#include <gear-lib/libdict.h>
 #include "librtsp.h"
 #include "media_source.h"
 #include "transport_session.h"
@@ -132,13 +130,6 @@ static void *rtsp_thread_event(struct thread *t, void *arg)
     return NULL;
 }
 
-static void media_source_default(struct rtsp_server *c)
-{
-    //const char *name = "H264";
-    const char *name = "uvc";
-    logi("rtsp://%s:%d/%s\n", strlen(c->host.ip_str)?c->host.ip_str:LOCAL_HOST, c->host.port, name);
-}
-
 static void *connect_pool_create()
 {
     return (void *)dict_new();
@@ -169,7 +160,6 @@ static int master_thread_create(struct rtsp_server *c)
     media_source_register_all();
     c->transport_session_pool = transport_session_pool_create();
     c->connect_pool = connect_pool_create();
-    media_source_default(c);
     c->listen_fd = fd;
     c->evbase = gevent_base_create();
     if (!c->evbase) {

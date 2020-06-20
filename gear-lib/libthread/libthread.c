@@ -19,6 +19,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  ******************************************************************************/
+#if defined (__linux__) || defined (__CYGWIN__)
+#define _GNU_SOURCE
+#include <pthread.h>
+#endif
 #include "libthread.h"
 #include "libatomic.h"
 #include <stdio.h>
@@ -26,10 +30,6 @@
 #include <string.h>
 #include <errno.h>
 #include <stdarg.h>
-
-#if defined (__WIN32__) || defined (WIN32) || defined (_MSC_VER)
-#pragma comment(lib , "libposix4win.lib")
-#endif
 
 #define CALLOC(size, type) \
     (type *)calloc(size, sizeof(type))
@@ -59,9 +59,9 @@ struct thread *thread_create(void *(*func)(struct thread *, void *), void *arg, 
     type = va_arg(ap, enum lock_type);
     va_end(ap);
 
-    if (type != LOCK_SPIN && type != LOCK_MUTEX &&
-        type != LOCK_SEM && type != LOCK_COND) {
-        type = LOCK_COND;//default
+    if (type != THREAD_LOCK_SPIN && type != THREAD_LOCK_MUTEX &&
+        type != THREAD_LOCK_SEM && type != THREAD_LOCK_COND) {
+        type = THREAD_LOCK_COND;//default
     }
     t->type = type;
 
@@ -71,27 +71,27 @@ struct thread *thread_create(void *(*func)(struct thread *, void *), void *arg, 
     }
 
     switch (type) {
-    case LOCK_SPIN:
+    case THREAD_LOCK_SPIN:
         break;
-    case LOCK_MUTEX:
+    case THREAD_LOCK_MUTEX:
         if (0 != mutex_lock_init(&t->lock.mutex)) {
             printf("mutex_lock_init failed\n");
             goto err;
         }
         break;
-    case LOCK_SEM:
+    case THREAD_LOCK_SEM:
         if (0 != sem_lock_init(&t->lock.sem)) {
             printf("sem_lock_init failed\n");
             goto err;
         }
         break;
-    case LOCK_COND:
+    case THREAD_LOCK_COND:
         if (0 != mutex_cond_init(&t->cond)) {
             printf("mutex_cond_init failed\n");
             goto err;
         }
         break;
-    case LOCK_RW:
+    case THREAD_LOCK_RW:
         break;
     default:
         break;
@@ -120,15 +120,15 @@ void thread_destroy(struct thread *t)
     }
     t->run = false;
     switch (t->type) {
-    case LOCK_SPIN:
+    case THREAD_LOCK_SPIN:
         break;
-    case LOCK_SEM:
+    case THREAD_LOCK_SEM:
         sem_lock_deinit(&t->lock.sem);
         break;
-    case LOCK_MUTEX:
+    case THREAD_LOCK_MUTEX:
         mutex_lock_deinit(&t->lock.mutex);
         break;
-    case LOCK_COND:
+    case THREAD_LOCK_COND:
         mutex_cond_signal_all(&t->cond);
         mutex_lock_deinit(&t->lock.mutex);
         mutex_cond_deinit(&t->cond);
@@ -141,7 +141,20 @@ void thread_destroy(struct thread *t)
     free(t);
 }
 
-void thread_info(struct thread *t)
+int thread_set_name(struct thread *t, const char *name)
+{
+#if defined (__linux__) || defined (__CYGWIN__)
+
+    if (0 != pthread_setname_np(t->tid, name)) {
+        printf("pthread_setname_np %s failed: %d\n", name, errno);
+        return -1;
+    }
+    strncpy(t->name, name, strlen(name));
+    return 0;
+#endif
+}
+
+void thread_get_info(struct thread *t)
 {
 #if defined (__linux__) || defined (__CYGWIN__)
     int i;
@@ -187,6 +200,10 @@ void thread_info(struct thread *t)
     if (0 == pthread_attr_getstack(&t->attr, &stkaddr, &v)) {
         printf("stack address = %p, size = %zu\n", stkaddr, v);
     }
+
+    if (0 == pthread_getname_np(t->tid, t->name, sizeof(t->name))) {
+        printf("thread name = %s\n", t->name);
+    }
 #endif
 }
 
@@ -196,10 +213,10 @@ int thread_lock(struct thread *t)
         return -1;
     }
     switch (t->type) {
-    case LOCK_MUTEX:
+    case THREAD_LOCK_MUTEX:
         return mutex_lock(&t->lock.mutex);
         break;
-    case LOCK_SPIN:
+    case THREAD_LOCK_SPIN:
         return spin_lock(&t->lock.spin);
         break;
     default:
@@ -214,10 +231,10 @@ int thread_unlock(struct thread *t)
         return -1;
     }
     switch (t->type) {
-    case LOCK_MUTEX:
+    case THREAD_LOCK_MUTEX:
         return mutex_unlock(&t->lock.mutex);
         break;
-    case LOCK_SPIN:
+    case THREAD_LOCK_SPIN:
         return spin_unlock(&t->lock.spin);
         break;
     default:
@@ -232,11 +249,11 @@ int thread_wait(struct thread *t, int64_t ms)
         return -1;
     }
     switch (t->type) {
-    case LOCK_COND:
-    case LOCK_MUTEX:
+    case THREAD_LOCK_COND:
+    case THREAD_LOCK_MUTEX:
         return mutex_cond_wait(&t->lock.mutex, &t->cond, ms);
         break;
-    case LOCK_SEM:
+    case THREAD_LOCK_SEM:
         return sem_lock_wait(&t->lock.sem, ms);
         break;
     default:
@@ -251,10 +268,10 @@ int thread_signal(struct thread *t)
         return -1;
     }
     switch (t->type) {
-    case LOCK_COND:
+    case THREAD_LOCK_COND:
         mutex_cond_signal(&t->cond);
         break;
-    case LOCK_SEM:
+    case THREAD_LOCK_SEM:
         return sem_lock_signal(&t->lock.sem);
         break;
     default:
@@ -269,7 +286,7 @@ int thread_signal_all(struct thread *t)
         return -1;
     }
     switch (t->type) {
-    case LOCK_COND:
+    case THREAD_LOCK_COND:
         mutex_cond_signal_all(&t->cond);
         break;
     default:
