@@ -16,14 +16,13 @@ This is a collection of basic libraries.
 | libdict: Hash key-value dictonary library | libhash: Hash key-value library based on hlist from kernel |
 | libringbuffer: | libqueue: queue library, support memory hook |
 | librbtree: comes from linux kernel rbtree. | libsort: |
-| libvector: | libmacro: Basic Macro define library, include kernel list and so on |
-| libdarray: Dynamic array | |
+| libvector: | libdarray: Dynamic array |
 
 ## Network
 |  |  |
 |--|--|
 | librtsp: Real Time Streaming Protocol server for ipcamera or NVR | librtmpc: Real Time Messaging Protocol client for liveshow |
-| libskt: socket warpper api for easily use | librpc: Remote Procedure Call library |
+| libsock: socket warpper api for easily use | librpc: Remote Procedure Call library |
 | libipc: Inter-Process Communication, support mqueue/netlink/shm | libp2p: High level p2p punch hole library, easy API to use |
 | libhomekit: Apple homekit protocol |
 
@@ -43,13 +42,13 @@ This is a collection of basic libraries.
 ## Multi-Media
 |  |  |
 |--|--|
-| libuvc: USB video class V4L2/dshow | libmp4parser: MP4 format parser |
+| libuvc: USB video class V4L2/dshow | libmp4: MP4 muxer and parser |
 | libjpeg-ex: | libmedia-io: audio/video frame/packet define |
 
 ## OS Abstraction Layer
 |  |  |
 |--|--|
-| libposix4win: posix adapter for Windows | libposix4rtos: posix adapter for FreeRTOS |
+| libposix: posix adapter for Windows/rtos/ios |
 
 ## Misc
 |  |  |

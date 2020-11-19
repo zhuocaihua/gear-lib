@@ -28,104 +28,107 @@
 #define ALIGNMENT 32
 #define ALIGN_SIZE(size, align) (((size) + (align - 1)) & (~(align - 1)))
 
-#ifndef FREERTOS
+#if defined _ISOC11_SOURCE || __USE_ISOC11 || defined __USE_ISOCXX11
+/*
+ * void *aligned_alloc(size_t, size_t) defined in stdlib.h
+ */
 #define aligned_free    free
-#endif
-
-const char *pixel_format_name(enum pixel_format format)
+#else
+static void *aligned_alloc(size_t alignment, size_t size)
 {
-    switch (format) {
-    case PIXEL_FORMAT_I420:
-        return "I420";
-    case PIXEL_FORMAT_NV12:
-        return "NV12";
-    case PIXEL_FORMAT_I422:
-        return "I422";
-    case PIXEL_FORMAT_YVYU:
-        return "YVYU";
-    case PIXEL_FORMAT_YUY2:
-        return "YUY2";
-    case PIXEL_FORMAT_UYVY:
-        return "UYVY";
-    case PIXEL_FORMAT_RGBA:
-        return "RGBA";
-    case PIXEL_FORMAT_BGRA:
-        return "BGRA";
-    case PIXEL_FORMAT_BGRX:
-        return "BGRX";
-    case PIXEL_FORMAT_I444:
-        return "I444";
-    case PIXEL_FORMAT_Y800:
-        return "Y800";
-    case PIXEL_FORMAT_BGR3:
-        return "BGR3";
-    case PIXEL_FORMAT_I40A:
-        return "I40A";
-    case PIXEL_FORMAT_I42A:
-        return "I42A";
-    case PIXEL_FORMAT_YUVA:
-        return "YUVA";
-    case PIXEL_FORMAT_AYUV:
-        return "AYUV";
-    case PIXEL_FORMAT_JPEG:
-        return "JPEG";
-    case PIXEL_FORMAT_MJPG:
-        return "MJPG";
-    default:
-        return "PIXEL_FORMAT_UNKNOWN";
+    long diff;
+    void *ptr = malloc(size + alignment);
+    if (ptr) {
+        diff = ((~(long)ptr) & (alignment - 1)) + 1;
+        ptr = (char *)ptr + diff;
+        ((char *)ptr)[-1] = (char)diff;
     }
-    return "PIXEL_FORMAT_UNKNOWN";
+    return ptr;
 }
 
-#define MAKE_FOURCC(a, b, c, d) \
-    ((uint32_t)(((d) << 24) | ((c) << 16) | ((b) << 8) | (a)))
-
-
-enum pixel_format pixel_format_from_fourcc(uint32_t fourcc)
+static void aligned_free(void *ptr)
 {
-    switch (fourcc) {
-    case MAKE_FOURCC('Y', '4', '4', '4'):
-        return PIXEL_FORMAT_I444;
-    case MAKE_FOURCC('U', 'Y', 'V', 'Y'):
-    case MAKE_FOURCC('H', 'D', 'Y', 'C'):
-    case MAKE_FOURCC('U', 'Y', 'N', 'V'):
-    case MAKE_FOURCC('U', 'Y', 'N', 'Y'):
-    case MAKE_FOURCC('u', 'y', 'v', '1'):
-    case MAKE_FOURCC('2', 'v', 'u', 'y'):
-    case MAKE_FOURCC('2', 'V', 'u', 'y'):
-        return PIXEL_FORMAT_UYVY;
-    case MAKE_FOURCC('Y', 'U', 'Y', 'V'):
-    case MAKE_FOURCC('Y', 'U', 'Y', '2'):
-    case MAKE_FOURCC('Y', '4', '2', '2'):
-    case MAKE_FOURCC('V', '4', '2', '2'):
-    case MAKE_FOURCC('V', 'Y', 'U', 'Y'):
-    case MAKE_FOURCC('Y', 'U', 'N', 'V'):
-    case MAKE_FOURCC('y', 'u', 'v', '2'):
-    case MAKE_FOURCC('y', 'u', 'v', 's'):
-        return PIXEL_FORMAT_YUY2;
-    case MAKE_FOURCC('Y', 'V', 'Y', 'U'):
-        return PIXEL_FORMAT_YVYU;
-    case MAKE_FOURCC('Y', 'V', '1', '2'):
-        return PIXEL_FORMAT_I420;
-    case MAKE_FOURCC('Y', 'U', '1', '2'):
-        return PIXEL_FORMAT_I420;
-    case MAKE_FOURCC('N', 'V', '1', '2'):
-        return PIXEL_FORMAT_NV12;
-    case MAKE_FOURCC('X', 'R', '2', '4'):
-        return PIXEL_FORMAT_BGRX;
-    case MAKE_FOURCC('B', 'G', 'R', '3'):
-        return PIXEL_FORMAT_BGR3;
-    case MAKE_FOURCC('A', 'R', '2', '4'):
-        return PIXEL_FORMAT_BGRA;
-    case MAKE_FOURCC('Y', '8', '0', '0'):
-        return PIXEL_FORMAT_Y800;
-    case MAKE_FOURCC('J', 'P', 'E', 'G'):
-        return PIXEL_FORMAT_JPEG;
-    case MAKE_FOURCC('M', 'J', 'P', 'G'):
-        return PIXEL_FORMAT_MJPG;
+	if (ptr)
+		free((char *)ptr - ((char *)ptr)[-1]);
+}
+#endif
+
+struct pixel_format_name {
+    enum pixel_format format;
+    char name[32];
+};
+
+struct video_codec_type_name {
+    enum video_codec_type type;
+    char name[32];
+};
+
+static struct pixel_format_name pxlfmt_tbl[] = {
+    {PIXEL_FORMAT_NONE, "PIXEL_FORMAT_NONE"},
+    {PIXEL_FORMAT_I420, "I420"},
+    {PIXEL_FORMAT_NV12, "NV12"},
+    {PIXEL_FORMAT_YVYU, "YVYU"},
+    {PIXEL_FORMAT_YUY2, "YUY2"},
+    {PIXEL_FORMAT_UYVY, "UYVY"},
+    {PIXEL_FORMAT_RGBA, "RGBA"},
+    {PIXEL_FORMAT_BGRA, "BGRA"},
+    {PIXEL_FORMAT_BGRX, "BGRX"},
+    {PIXEL_FORMAT_Y800, "Y800"},
+    {PIXEL_FORMAT_I444, "I444"},
+    {PIXEL_FORMAT_BGR3, "BGR3"},
+    {PIXEL_FORMAT_I422, "I422"},
+    {PIXEL_FORMAT_I40A, "I40A"},
+    {PIXEL_FORMAT_I42A, "I42A"},
+    {PIXEL_FORMAT_YUVA, "YUVA"},
+    {PIXEL_FORMAT_AYUV, "AYUV"},
+    {PIXEL_FORMAT_JPEG, "JPEG"},
+    {PIXEL_FORMAT_MJPG, "MJPG"},
+    {PIXEL_FORMAT_MAX,  "PIXEL_FORMAT_MAX"},
+};
+
+static struct video_codec_type_name video_codec_tbl[] = {
+    {VIDEO_CODEC_NONE, "VIDEO_CODEC_NONE"},
+    {VIDEO_CODEC_H264, "H264"},
+    {VIDEO_CODEC_H265, "H265"},
+    {VIDEO_CODEC_MAX, "VIDEO_CODEC_MAX"},
+};
+
+enum pixel_format pixel_string_to_format(const char *name)
+{
+    if (!name) {
+        return PIXEL_FORMAT_NONE;
     }
-    printf("pixel_format_from_fourcc failed!\n");
+    for (int i = 0; i < PIXEL_FORMAT_MAX; i++) {
+        if (!strncasecmp(name, pxlfmt_tbl[i].name, sizeof(pxlfmt_tbl[i].name))) {
+            return pxlfmt_tbl[i].format;
+        }
+    }
     return PIXEL_FORMAT_NONE;
+}
+
+const char *pixel_format_to_string(enum pixel_format fmt)
+{
+    fmt = (fmt > PIXEL_FORMAT_MAX) ? PIXEL_FORMAT_MAX : fmt;
+    return pxlfmt_tbl[fmt].name;
+}
+
+enum video_codec_type video_codec_string_to_type(const char *name)
+{
+    if (!name) {
+        return VIDEO_CODEC_NONE;
+    }
+    for (int i = 0; i < VIDEO_CODEC_MAX; i++) {
+        if (!strncasecmp(name, video_codec_tbl[i].name, sizeof(video_codec_tbl[i].name))) {
+            return video_codec_tbl[i].type;
+        }
+    }
+    return VIDEO_CODEC_NONE;
+}
+
+const char *video_codec_type_to_string(enum video_codec_type type)
+{
+    type = (type > VIDEO_CODEC_MAX) ? VIDEO_CODEC_MAX : type;
+    return video_codec_tbl[type].name;
 }
 
 int video_frame_init(struct video_frame *frame, enum pixel_format format,
@@ -156,7 +159,7 @@ int video_frame_init(struct video_frame *frame, enum pixel_format format,
         size = ALIGN_SIZE(size, ALIGNMENT);
         frame->total_size = size;
         if (flag == VFC_ALLOC) {
-        frame->data[0] = aligned_alloc(ALIGNMENT, size);
+        frame->data[0] = (uint8_t *)aligned_alloc(ALIGNMENT, size);
         frame->data[1] = (uint8_t *)frame->data[0] + frame->plane_offsets[1];
         frame->data[2] = (uint8_t *)frame->data[0] + frame->plane_offsets[2];
         }
@@ -431,6 +434,18 @@ struct video_frame *video_frame_copy(struct video_frame *dst, const struct video
     return dst;
 }
 
+void video_producer_dump(struct video_producer *vs)
+{
+    if (!vs) {
+        printf("video producer is empty!\n");
+        return;
+    }
+    printf("==== video producer info ====\n");
+    printf("format: %s\n", pixel_format_to_string(vs->format));
+    printf("resolution: %d*%d @ %d/%dfps\n", vs->width, vs->height, vs->framerate.den, vs->framerate.num);
+    printf("=============================\n");
+}
+
 struct video_packet *video_packet_create(void *data, size_t len)
 {
     struct video_packet *vp = calloc(1, sizeof(struct video_packet));
@@ -450,4 +465,17 @@ void video_packet_destroy(struct video_packet *vp)
         }
         free(vp);
     }
+}
+
+void video_encoder_dump(struct video_encoder *ve)
+{
+    if (!ve) {
+        printf("video encoder is empty!\n");
+        return;
+    }
+    printf("==== video encoder info ====\n");
+    printf("type: %s\n", video_codec_type_to_string(ve->type));
+    printf("format: %s\n", pixel_format_to_string(ve->format));
+    printf("resolution: %d*%d @ %d/%dfps\n", ve->width, ve->height, ve->framerate.den, ve->framerate.num);
+    printf("============================\n");
 }

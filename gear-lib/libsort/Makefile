@@ -1,38 +1,33 @@
-
-#ARCH: linux/pi/android/ios/
+###############################################################################
+# common
+###############################################################################
+#ARCH: linux/arm/android/ios/win
 ARCH		?= linux
-CROSS_PREFIX	?=
 OUTPUT		?= /usr/local
 BUILD_DIR	:= $(shell pwd)/../../build/
 ARCH_INC	:= $(BUILD_DIR)/$(ARCH).inc
 COLOR_INC	:= $(BUILD_DIR)/color.inc
 
-ifeq ($(ARCH_INC), $(wildcard $(ARCH_INC)))
 include $(ARCH_INC)
-endif
-
-CC	= $(CROSS_PREFIX)gcc
-CXX	= $(CROSS_PREFIX)g++
-LD	= $(CROSS_PREFIX)ld
-AR	= $(CROSS_PREFIX)ar
-STRIP   = $(CROSS_PREFIX)strip
-
-ifeq ($(COLOR_INC), $(wildcard $(COLOR_INC)))
 include $(COLOR_INC)
-else
-CC_V	= $(CC)
-CXX_V	= $(CXX)
-LD_V	= $(LD)
-AR_V	= $(AR)
-CP_V	= $(CP)
-RM_V	= $(RM)
-endif
 
-########
+CC_V		?= $(CC)
+CXX_V		?= $(CXX)
+LD_V		?= $(LD)
+AR_V		?= $(AR)
+CP_V		?= $(CP)
+RM_V		?= $(RM)
+
+###############################################################################
+# target and object
+###############################################################################
 LIBNAME		= libsort
+VER_TAG		= $(shell echo ${LIBNAME} | tr 'a-z' 'A-Z')
+VER		= $(shell awk '/'"${VER_TAG}_VERSION"'/{print $$3}' ${LIBNAME}.h)
 TGT_LIB_H	= $(LIBNAME).h
 TGT_LIB_A	= $(LIBNAME).a
 TGT_LIB_SO	= $(LIBNAME).so
+TGT_LIB_SO_VER	= $(TGT_LIB_SO).${VER}
 TGT_UNIT_TEST	= test_$(LIBNAME)
 
 OBJS_LIB	= $(LIBNAME).o
@@ -43,6 +38,9 @@ OBJS_LIB	+= select_sort.o
 
 OBJS_UNIT_TEST	= test_$(LIBNAME).o
 
+###############################################################################
+# cflags and ldflags
+###############################################################################
 ifeq ($(MODE), release)
 CFLAGS	:= -O2 -Wall -Werror -fPIC
 LTYPE   := release
@@ -56,12 +54,14 @@ else
 OUTLIBPATH :=$(OUTPUT)/$(LTYPE)
 endif
 CFLAGS	+= $($(ARCH)_CFLAGS)
-CFLAGS	+= -I$(OUTPUT)/include
+CFLAGS	+= -I$(OUTPUT)/include/gear-lib
 
 SHARED	:= -shared
 
 LDFLAGS	:= $($(ARCH)_LDFLAGS)
-
+###############################################################################
+# target
+###############################################################################
 .PHONY : all clean
 
 TGT	:= $(TGT_LIB_A)
@@ -79,7 +79,9 @@ $(TGT_LIB_A): $(OBJS_LIB)
 	$(AR_V) rcs $@ $^
 
 $(TGT_LIB_SO): $(OBJS_LIB)
-	$(CC_V) -o $@ $^ $(SHARED)
+	$(CC_V) -o $@ $^ $(SHARED) $(LDFLAGS)
+	@mv $(TGT_LIB_SO) $(TGT_LIB_SO_VER)
+	@ln -sf $(TGT_LIB_SO_VER) $(TGT_LIB_SO)
 
 $(TGT_UNIT_TEST): $(OBJS_UNIT_TEST) $(ANDROID_MAIN_OBJ)
 	$(CC_V) -o $@ $^ $(TGT_LIB_A) $(LDFLAGS)
@@ -87,15 +89,20 @@ $(TGT_UNIT_TEST): $(OBJS_UNIT_TEST) $(ANDROID_MAIN_OBJ)
 clean:
 	$(RM_V) -f $(OBJS)
 	$(RM_V) -f $(TGT)
+	$(RM_V) -f version.h
+	$(RM_V) -f $(TGT_LIB_SO)*
+	$(RM_V) -f $(TGT_LIB_SO_VER)
 
 install:
 	$(MAKEDIR_OUTPUT)
-	if [ "$(MODE)" = "release" ];then $(STRIP) $(TGT); fi
-	$(CP_V) -r $(TGT_LIB_H)  $(OUTPUT)/include
-	$(CP_V) -r $(TGT_LIB_A)  $(OUTLIBPATH)/lib
-	$(CP_V) -r $(TGT_LIB_SO) $(OUTLIBPATH)/lib
+	@if [ "$(MODE)" = "release" ];then $(STRIP) $(TGT); fi
+	$(CP_V) -r $(TGT_LIB_H)  $(OUTPUT)/include/gear-lib
+	$(CP_V) -r $(TGT_LIB_A)  $(OUTLIBPATH)/lib/gear-lib
+	$(CP_V) -r $(TGT_LIB_SO) $(OUTLIBPATH)/lib/gear-lib
+	$(CP_V) -r $(TGT_LIB_SO_VER) $(OUTLIBPATH)/lib/gear-lib
 
 uninstall:
-	cd $(OUTPUT)/include/ && rm -f $(TGT_LIB_H)
-	$(RM_V) -f $(OUTLIBPATH)/lib/$(TGT_LIB_A)
-	$(RM_V) -f $(OUTLIBPATH)/lib/$(TGT_LIB_SO)
+	cd $(OUTPUT)/include/gear-lib/ && rm -f $(TGT_LIB_H)
+	$(RM_V) -f $(OUTLIBPATH)/lib/gear-lib/$(TGT_LIB_A)
+	$(RM_V) -f $(OUTLIBPATH)/lib/gear-lib/$(TGT_LIB_SO)
+	$(RM_V) -f $(OUTLIBPATH)/lib/gear-lib/$(TGT_LIB_SO_VER)

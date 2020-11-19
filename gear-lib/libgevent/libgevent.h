@@ -22,15 +22,15 @@
 #ifndef LIBGEVENT_H
 #define LIBGEVENT_H
 
+#include <libposix.h>
 #include <stdint.h>
 #include <stdlib.h>
-#if defined (__linux__) || defined (__CYGWIN__)
+#if defined (OS_LINUX)
 #include <pthread.h>
 #include <sys/timerfd.h>
-#elif defined (__WIN32__) || defined (WIN32) || defined (_MSC_VER)
-#include "libposix4win.h"
 #endif
 
+#define LIBGEVENT_VERSION "0.1.0"
 
 #ifdef __cplusplus
 extern "C" {

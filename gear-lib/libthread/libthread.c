@@ -31,9 +31,6 @@
 #include <errno.h>
 #include <stdarg.h>
 
-#define CALLOC(size, type) \
-    (type *)calloc(size, sizeof(type))
-
 
 static void *__thread_func(void *arg)
 {
@@ -150,6 +147,8 @@ int thread_set_name(struct thread *t, const char *name)
         return -1;
     }
     strncpy(t->name, name, strlen(name));
+    return 0;
+#else
     return 0;
 #endif
 }

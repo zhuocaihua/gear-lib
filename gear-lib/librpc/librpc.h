@@ -22,11 +22,13 @@
 #ifndef LIBRPC_H
 #define LIBRPC_H
 
-#include <gear-lib/libhash.h>
+#include <libhash.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <semaphore.h>
+
+#define LIBRPC_VERSION "0.1.0"
 
 #ifdef __cplusplus
 extern "C" {

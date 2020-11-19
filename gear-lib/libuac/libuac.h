@@ -22,10 +22,11 @@
 #ifndef LIBUAC_H
 #define LIBUAC_H
 
-#include <gear-lib/libposix.h>
-#include <gear-lib/libmedia-io.h>
+#include <libmedia-io.h>
 #include <stdio.h>
 #include <stdint.h>
+
+#define LIBUAC_VERSION "0.1.0"
 
 #ifdef __cplusplus
 extern "C" {

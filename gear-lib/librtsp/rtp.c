@@ -20,9 +20,8 @@
  * SOFTWARE.
  ******************************************************************************/
 #include "rtp.h"
-#include <gear-lib/liblog.h>
-#include <gear-lib/libskt.h>
-#include <gear-lib/libmacro.h>
+#include <liblog.h>
+#include <libsock.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -225,7 +224,7 @@ int rtp_packet_deserialize(struct rtp_packet *pkt, const void* data, int bytes)
 
 struct rtp_packet *rtp_packet_create(uint8_t pt, int size, uint16_t seq, uint32_t ssrc)
 {
-    struct rtp_packet *pkt = CALLOC(1, struct rtp_packet);
+    struct rtp_packet *pkt = calloc(1, sizeof(struct rtp_packet));
     if (!pkt) return NULL;
 
     pkt->header.v = RTP_VERSION;
@@ -299,7 +298,7 @@ int rtp_ssrc(void)
 
 struct rtp_socket *rtp_socket_create(enum rtp_mode mode, int tcp_fd, const char* src_ip, const char *dst_ip)
 {
-    struct rtp_socket *s = CALLOC(1, struct rtp_socket);
+    struct rtp_socket *s = calloc(1, sizeof(struct rtp_socket));
     if (!s) {
         return NULL;
     }
@@ -314,12 +313,12 @@ struct rtp_socket *rtp_socket_create(enum rtp_mode mode, int tcp_fd, const char*
             i = rand() % 30000;
             i = i/2*2 + g_base_port;
 
-            if (-1 == (s->rtp_fd = skt_udp_bind(src_ip, i))) {
+            if (-1 == (s->rtp_fd = sock_udp_bind(src_ip, i))) {
                 continue;
             }
 
-            if (-1 == (s->rtcp_fd = skt_udp_bind(src_ip, i+1))) {
-                skt_close(s->rtp_fd);
+            if (-1 == (s->rtcp_fd = sock_udp_bind(src_ip, i+1))) {
+                sock_close(s->rtp_fd);
                 continue;
             }
             s->rtp_src_port = i;
@@ -352,23 +351,23 @@ void rtp_socket_destroy(struct rtp_socket *s)
 
 ssize_t rtp_sendto(struct rtp_socket *s, const char *ip, uint16_t port, const void *buf, size_t len)
 {
-    logd("skt_sendto %s:%d len=%d\n", ip, port, len);
-    return skt_sendto(s->rtp_fd, ip, port, buf, len);
+    logd("sock_sendto %s:%d len=%d\n", ip, port, len);
+    return sock_sendto(s->rtp_fd, ip, port, buf, len);
 }
 
 ssize_t rtp_recvfrom(struct rtp_socket *s, uint32_t *ip, uint16_t *port, void *buf, size_t len)
 {
-    return skt_recvfrom(s->rtp_fd, ip, port, buf, len);
+    return sock_recvfrom(s->rtp_fd, ip, port, buf, len);
 }
 
 ssize_t rtcp_sendto(struct rtp_socket *s, const char *ip, uint16_t port, const void *buf, size_t len)
 {
-    return skt_sendto(s->rtcp_fd, ip, port, buf, len);
+    return sock_sendto(s->rtcp_fd, ip, port, buf, len);
 }
 
 ssize_t rtcp_recvfrom(struct rtp_socket *s, uint32_t *ip, uint16_t *port, void *buf, size_t len)
 {
-    return skt_recvfrom(s->rtp_fd, ip, port, buf, len);
+    return sock_recvfrom(s->rtp_fd, ip, port, buf, len);
 }
 
 
@@ -380,7 +379,7 @@ ssize_t rtcp_recvfrom(struct rtp_socket *s, uint32_t *ip, uint16_t *port, void *
 
 struct rtp_context *rtp_create(int frequence, int boundwidth)
 {
-    struct rtp_context *ctx	= CALLOC(1, struct rtp_context);
+    struct rtp_context *ctx	= calloc(1, sizeof(struct rtp_context));
     if (!ctx) return NULL;
 
     ctx->ssrc = rtp_ssrc();

@@ -20,13 +20,11 @@
  * SOFTWARE.
  ******************************************************************************/
 #include "librpc.h"
-#include <gear-lib/libmacro.h>
-#include <gear-lib/libgevent.h>
-#include <gear-lib/libhash.h>
-#include <gear-lib/libskt.h>
-#include <gear-lib/libthread.h>
-#include <gear-lib/libworkq.h>
-#include <gear-lib/libtime.h>
+#include <libgevent.h>
+#include <libhash.h>
+#include <libthread.h>
+#include <libworkq.h>
+#include <libtime.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -201,7 +199,7 @@ static int do_process_msg(struct rpc *r, void *buf, size_t len)
 
     msg_handler = find_msg_handler(msg_id);
     if (msg_handler) {
-        struct wq_arg *arg = CALLOC(1, struct wq_arg);
+        struct wq_arg *arg = calloc(1, sizeof(struct wq_arg));
         memcpy(&arg->handler, msg_handler, sizeof(msg_handler_t));
         memcpy(&arg->r, r, sizeof(struct rpc));
         arg->buf = calloc(1, len);
@@ -227,7 +225,7 @@ static int do_process_msg(struct rpc *r, void *buf, size_t len)
 
 struct iovec *rpc_recv_buf(struct rpc *r)
 {
-    struct iovec *buf = CALLOC(1, struct iovec);
+    struct iovec *buf = calloc(1, sizeof(struct iovec));
     struct rpc_packet *recv_pkt = &r->recv_pkt;
     uint32_t uuid_dst;
     uint32_t uuid_src;
@@ -574,7 +572,7 @@ int rpc_peer_call(struct rpc *r, uint32_t uuid, uint32_t cmd_id,
 
 struct rpc *rpc_client_create(const char *host, uint16_t port)
 {
-    struct rpc *r = CALLOC(1, struct rpc);
+    struct rpc *r = calloc(1, sizeof(struct rpc));
     if (!r) {
         printf("malloc failed!\n");
         return NULL;
@@ -700,7 +698,7 @@ void on_server_init(struct rpc *r, int fd, uint32_t ip, uint16_t port)
 
 struct rpc *rpc_server_create(const char *host, uint16_t port)
 {
-    struct rpc *rpc = CALLOC(1, struct rpc);
+    struct rpc *rpc = calloc(1, sizeof(struct rpc));
     if (!rpc) {
         printf("malloc rpc failed!\n");
         return NULL;

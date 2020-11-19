@@ -22,18 +22,18 @@
 #ifndef LIBTHREAD_H
 #define LIBTHREAD_H
 
+#include <libposix.h>
 #include <stdio.h>
 #include <stdint.h>
+#ifdef OS_LINUX
 #include <stdbool.h>
-#if defined (__linux__) || defined (__CYGWIN__)
 #define _GNU_SOURCE
 #include <pthread.h>
 #include <semaphore.h>
-#elif defined (__WIN32__) || defined (WIN32) || defined (_MSC_VER)
-#include "libposix4win.h"
-#elif defined (FREERTOS)
-#include "libposix4rtos/libposix4rtos.h"
+#define _POSIX_RW_LOCKS
 #endif
+
+#define LIBTHREAD_VERSION "0.1.0"
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,6 +80,7 @@ void mutex_cond_deinit(mutex_cond_t *cond);
 /*
  * read-write lock implemented by pthread_rwlock APIs
  */
+#if defined(_POSIX_RW_LOCKS)
 typedef pthread_rwlock_t rw_lock_t;
 int rwlock_init(rw_lock_t *lock);
 int rwlock_rdlock(rw_lock_t *lock);
@@ -88,6 +89,7 @@ int rwlock_wrlock(rw_lock_t *lock);
 int rwlock_trywrlock(rw_lock_t *lock);
 int rwlock_unlock(rw_lock_t *lock);
 void rwlock_deinit(rw_lock_t *lock);
+#endif
 
 
 /*

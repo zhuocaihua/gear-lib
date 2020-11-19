@@ -84,6 +84,16 @@ enum pixel_format {
 #define VIDEO_MAX_PLANES 8
 #endif
 
+/**
+ * This structure describe attribute of video producer, which is creator
+ */
+struct video_producer {
+    enum pixel_format format;
+    uint32_t          width;
+    uint32_t          height;
+    rational_t        framerate;
+};
+
 struct video_frame {
     uint8_t          *data[VIDEO_MAX_PLANES];
     uint32_t          linesize[VIDEO_MAX_PLANES];
@@ -98,8 +108,8 @@ struct video_frame {
     int               flag;
 };
 
-const char *pixel_format_name(enum pixel_format format);
-enum pixel_format pixel_format_from_fourcc(uint32_t fourcc);
+const char *pixel_format_to_string(enum pixel_format fmt);
+enum pixel_format pixel_string_to_format(const char *name);
 
 #define VFC_NONE    0   /* nothing to do */
 #define VFC_ALLOC   1   /* alloc frame->data */
@@ -112,23 +122,30 @@ void video_frame_destroy(struct video_frame *frame);
 struct video_frame *video_frame_copy(struct video_frame *dst,
                 const struct video_frame *src);
 
+void video_producer_dump(struct video_producer *vp);
 
 /******************************************************************************
  * compressed video define
  ******************************************************************************/
-enum video_codec_format {
+enum video_codec_type {
+    VIDEO_CODEC_NONE,
     VIDEO_CODEC_H264,
     VIDEO_CODEC_AVC = VIDEO_CODEC_H264,
     VIDEO_CODEC_H265,
     VIDEO_CODEC_HEVC = VIDEO_CODEC_H265,
+    VIDEO_CODEC_MAX,
 };
 
-enum h264_frame_type {
-    H264_FRAME_UNKNOWN = 0,
-    H264_FRAME_IDR,
-    H264_FRAME_I,
-    H264_FRAME_P,
-    H264_FRAME_B,
+const char *video_codec_type_to_string(enum video_codec_type type);
+enum video_codec_type video_codec_string_to_type(const char *name);
+
+enum video_packet_type {
+    H26X_FRAME_UNKNOWN = 0,
+    H26X_FRAME_IDR,
+    H26X_FRAME_I,
+    H26X_FRAME_P,
+    H26X_FRAME_B,
+    H26X_FRAME_TYPE_MAX,
 };
 
 enum h264_nal_type {
@@ -153,7 +170,8 @@ enum h264_nal_type {
  * This structure describe encoder attribute
  */
 struct video_encoder {
-    enum video_codec_format format;
+    enum video_codec_type   type;
+    enum pixel_format       format;
     uint32_t                width;
     uint32_t                height;
     double                  bitrate;
@@ -169,17 +187,19 @@ struct video_encoder {
  * This structure stores compressed data.
  */
 struct video_packet {
-    uint8_t             *data;
-    size_t               size;
-    uint64_t             pts;
-    uint64_t             dts;
-    bool                 key_frame;
-    int                  packet_type;
-    struct video_encoder encoder;
+    uint8_t               *data;
+    size_t                 size;
+    enum video_packet_type type;
+    uint64_t               pts;
+    uint64_t               dts;
+    bool                   key_frame;
+    struct video_encoder   encoder;
 };
 
 struct video_packet *video_packet_create(void *data, size_t len);
 void video_packet_destroy(struct video_packet *vp);
+
+void video_encoder_dump(struct video_encoder *ve);
 
 #ifdef __cplusplus
 }

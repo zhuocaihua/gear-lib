@@ -22,13 +22,14 @@
 #ifndef LIBVECTOR_H
 #define LIBVECTOR_H
 
+#include <libposix.h>
 #include <stdint.h>
-#if defined (__linux__) || defined (__CYGWIN__)
+#if defined (OS_LINUX)
 #include <unistd.h>
 #include <sys/uio.h>
-#elif defined (__WIN32__) || defined (WIN32) || defined (_MSC_VER)
-#include "libposix4win.h"
 #endif
+
+#define LIBVECTOR_VERSION "0.1.0"
 
 #ifdef __cplusplus
 extern "C" {

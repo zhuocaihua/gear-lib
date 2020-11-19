@@ -16,14 +16,13 @@
 | libdict: 哈希字典 | libhash: linux内核原生哈希库 |
 | libringbuffer: 循环缓冲 | libqueue: 数据队列 |
 | librbtree: 内核rbtree | libsort: |
-| libvector: 容器库 | libmacro: 通用宏定义 |
-| libdarray: 动态数组 | |
+| libvector: 容器库 | libdarray: 动态数组 |
 
 ## 网络库
 |  |  |
 |--|--|
 | librtsp: RTSP协议，适合IPCamera和NVR开发 | librtmpc: RTMP协议，适合推流直播 |
-| libskt: Socket封装 | librpc: 远程过程调用库 |
+| libsock: Socket封装 | librpc: 远程过程调用库 |
 | libipc: 进程间通信 | libp2p: p2p穿透传输 |
 | libhomekit: Apple homekit协议库 | |
 
@@ -43,13 +42,13 @@
 ## 多媒体
 |  |  |
 |--|--|
-| libuvc: USB摄像头库 | libmp4parser: MP4解析库 |
+| libuvc: USB摄像头库 | libmp4: MP4录制解析库 |
 | libjpeg-ex: | libmedia-io: 音频视频格式定义 |
 
 ## 系统抽象层
 |  |  |
 |--|--|
-| libposix4win: windows平台poxix适配库 | libposix4rtos: FreeRTOS平台poxix适配库 |
+| libposix: windows/rtos/ios平台posix适配库 |
 
 ## 其他
 |  |  |

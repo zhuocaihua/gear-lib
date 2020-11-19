@@ -1,8 +1,14 @@
+### esp32
+   * toolchain: xtensa-esp32-elf  
+    copy or softlink gear-lib to esp32 components dir  
+    gear-lib/component.mk is makefile of esp32  
+    `$ make`
+
 ### Windows
   * Windows7 install "Microsoft Visual Studio 10.0"  
     open cmd.exe  
    `> "D:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\vcvars32.bat"`  
-   `> cd libraries\libposix4win\`  
+   `> cd gear-lib\libposix\`  
    `> nmake /f Makefile.nmake clean`  
    `> nmake /f Makefile.nmake`  
    default debug version, compiler release version  
@@ -56,3 +62,6 @@
   * with "build folder", you can build x86, pi, android, ios and color is also set
   * "sudo make install" is needed when build libxxx alone.
 
+## dependency
+  * plantuml -tsvg dependency.txt
+  ![dependency](build/dependency.svg)  

@@ -1,41 +1,29 @@
 ##############################################################################
 # common
 ###############################################################################
-#ARCH: linux/pi/android/ios/
+#ARCH: linux/arm/android/ios/win
 ARCH		?= linux
-CROSS_PREFIX	?=
 OUTPUT		?= /usr/local
 BUILD_DIR	:= $(shell pwd)/../../build/
 ARCH_INC	:= $(BUILD_DIR)/$(ARCH).inc
 COLOR_INC	:= $(BUILD_DIR)/color.inc
 
-ifeq ($(ARCH_INC), $(wildcard $(ARCH_INC)))
 include $(ARCH_INC)
-endif
-
-CC	= $(CROSS_PREFIX)gcc
-CXX	= $(CROSS_PREFIX)g++
-LD	= $(CROSS_PREFIX)ld
-AR	= $(CROSS_PREFIX)ar
-STRIP   = $(CROSS_PREFIX)strip
-
-ifeq ($(COLOR_INC), $(wildcard $(COLOR_INC)))
 include $(COLOR_INC)
-else
-CC_V	= $(CC)
-CXX_V	= $(CXX)
-LD_V	= $(LD)
-AR_V	= $(AR)
-CP_V	= $(CP)
-RM_V	= $(RM)
-endif
+
+CC_V		?= $(CC)
+CXX_V		?= $(CXX)
+LD_V		?= $(LD)
+AR_V		?= $(AR)
+CP_V		?= $(CP)
+RM_V		?= $(RM)
 
 ###############################################################################
 # target and object
 ###############################################################################
 LIBNAME		= libipc
-VERSION_SH	= $(shell pwd)/version.sh $(LIBNAME)
-VER		= $(shell $(VERSION_SH); awk '/define\ $(LIBNAME)_version/{print $$3}' version.h)
+VER_TAG		= $(shell echo ${LIBNAME} | tr 'a-z' 'A-Z')
+VER		= $(shell awk '/'"${VER_TAG}_VERSION"'/{print $$3}' ${LIBNAME}.h)
 TGT_LIB_H	= $(LIBNAME).h
 TGT_LIB_H	+= libipc_stub.h
 TGT_LIB_A	= $(LIBNAME).a
@@ -68,8 +56,7 @@ ifneq ($(driver), y)
 EXTRA_CFLAGS	+= -fPIC
 endif
 EXTRA_CFLAGS	+= $($(ARCH)_CFLAGS)
-EXTRA_CFLAGS	+= -I$(OUTPUT)/include
-EXTRA_CFLAGS	+= -I../libmacro/
+EXTRA_CFLAGS	+= -I$(OUTPUT)/include/gear-lib
 
 SHARED	:= -shared
 

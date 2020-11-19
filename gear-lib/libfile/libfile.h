@@ -22,17 +22,12 @@
 #ifndef LIBFILE_H
 #define LIBFILE_H
 
+#include <libposix.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <limits.h>
 
-#if defined (__linux__) || defined (__CYGWIN__)
-#include <stdbool.h>
-#include <sys/uio.h>
-#elif defined (__WIN32__) || defined (WIN32) || defined (_MSC_VER)
-#include "libposix4win.h"
-#endif
-
+#define LIBFILE_VERSION "0.1.0"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,12 +59,6 @@ struct file_desc {
     char *name;
 };
 
-typedef struct file {
-    struct file_desc *fd;
-    const struct file_ops *ops;
-    uint64_t size;
-} file;
-
 typedef struct file_info {
     uint64_t modify_sec;
     uint64_t access_sec;
@@ -77,6 +66,12 @@ typedef struct file_info {
     char path[PATH_MAX];
     uint64_t size;
 } file_info;
+
+typedef struct file {
+    struct file_desc *fd;
+    const struct file_ops *ops;
+    struct file_info info;
+} file;
 
 typedef struct file_systat {
     uint64_t size_total;

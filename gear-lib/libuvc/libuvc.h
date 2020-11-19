@@ -22,14 +22,16 @@
 #ifndef LIBUVC_H
 #define LIBUVC_H
 
-#include <gear-lib/libposix.h>
-#include <gear-lib/libmedia-io.h>
+#include <libposix.h>
+#include <libmedia-io.h>
 #include <stdio.h>
 #include <stdint.h>
 #if defined (OS_LINUX)
 #define __USE_LINUX_IOCTL_DEFS
 #include <sys/ioctl.h>
 #endif
+
+#define LIBUVC_VERSION "0.1.0"
 
 #ifdef __cplusplus
 extern "C" {

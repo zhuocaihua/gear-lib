@@ -19,6 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  ******************************************************************************/
+#include <libposix.h>
 #include "liblog.h"
 #include "color.h"
 
@@ -31,7 +32,7 @@
 #include <time.h>
 #include <fcntl.h>
 
-#if defined (__linux__) || defined (__CYGWIN__)
+#if defined (OS_LINUX)
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <pthread.h>
@@ -48,9 +49,7 @@
 
 #define USE_SYSLOG
 
-#elif defined (__WIN32__) || defined (WIN32) || defined (_MSC_VER)
-#include "libposix4win.h"
-#elif defined (__ANDROID__)
+#elif defined (OS_ANDROID)
 #include <jni.h>
 #include <android/log.h>
 #endif
@@ -205,41 +204,13 @@ static unsigned long long get_file_size_by_fp(FILE *fp)
     return size;
 }
 
-#if defined (__WIN32__) || defined (WIN32) || defined (_MSC_VER)
-
-#else
-static int get_proc_name(char *name, size_t len)
+#if defined (OS_APPLE) || defined (OS_RTOS)
+static pid_t gettid(void)
 {
-    int i, ret;
-    char proc_name[PATH_MAX];
-    char *ptr = NULL;
-    memset(proc_name, 0, sizeof(proc_name));
-    if (-1 == readlink("/proc/self/exe", proc_name, sizeof(proc_name))) {
-        fprintf(stderr, "readlink failed!\n");
-        return -1;
-    }
-    ret = strlen(proc_name);
-    for (i = ret, ptr = proc_name; i > 0; i--) {
-        if (ptr[i] == PATH_SPLIT) {
-            ptr+= i+1;
-            break;
-        }
-    }
-    if (i == 0) {
-        fprintf(stderr, "proc path %s is invalid\n", proc_name);
-        return -1;
-    }
-    if (ret-i > (int)len) {
-        fprintf(stderr, "proc name length %d is larger than %d\n", ret-i, (int)len);
-        return -1;
-    }
-    strncpy(name, ptr, ret - i);
     return 0;
 }
-#endif
 
-#if defined (__APPLE__)
-#elif defined (__linux__) || defined (__CYGWIN__)
+#elif defined (OS_LINUX)
 static pid_t gettid(void)
 {
 #ifndef __CYGWIN__
@@ -253,7 +224,7 @@ static pid_t gettid(void)
 static void log_get_time(char *str, int len, int flag_name)
 {
     char date_fmt[20];
-    char date_ms[4];
+    char date_ms[32];
     struct timeval tv;
     struct tm now_tm;
     int now_ms;

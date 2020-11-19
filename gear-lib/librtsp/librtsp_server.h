@@ -22,9 +22,9 @@
 #ifndef LIBRTSP_SERVER_H
 #define LIBRTSP_SERVER_H
 
-#include <gear-lib/libthread.h>
-#include <gear-lib/libgevent.h>
-#include <gear-lib/libskt.h>
+#include <libthread.h>
+#include <libgevent.h>
+#include <libsock.h>
 #include "media_source.h"
 
 #ifdef __cplusplus
@@ -33,7 +33,7 @@ extern "C" {
 
 struct rtsp_server {
     int listen_fd;
-    struct skt_addr host;
+    struct sock_addr host;
     struct gevent_base *evbase;
     void *connect_pool;
     void *transport_session_pool;

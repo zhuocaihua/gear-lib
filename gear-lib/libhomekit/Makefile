@@ -34,8 +34,8 @@ endif
 # target and object
 ###############################################################################
 LIBNAME		= libhomekit
-VERSION_SH	= $(shell pwd)/version.sh $(LIBNAME)
-VER		= $(shell $(VERSION_SH); awk '/define\ $(LIBNAME)_version/{print $$3}' version.h)
+VER_TAG		= $(shell echo ${LIBNAME} | tr 'a-z' 'A-Z')
+VER		= $(shell awk '/'"${VER_TAG}_VERSION"'/{print $$3}' ${LIBNAME}.h)
 TGT_LIB_H	= $(LIBNAME).h
 TGT_LIB_A	= $(LIBNAME).a
 TGT_LIB_SO	= $(LIBNAME).so
@@ -48,6 +48,7 @@ OBJS_LIB	= \
 		  src/crypto.o \
 		  src/debug.o \
 		  src/json.o \
+		  src/mdnsresponder.o \
 		  src/pairing.o \
 		  src/port.o \
 		  src/query_params.o \

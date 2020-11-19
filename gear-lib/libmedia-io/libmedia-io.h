@@ -22,20 +22,27 @@
 #ifndef LIBMEDIA_IO_H
 #define LIBMEDIA_IO_H
 
+#include <libposix.h>
 #include <stdlib.h>
-#include <stdbool.h>
+
+#define LIBMEDIA_IO_VERSION "0.1.0"
+
+#include "audio-def.h"
+#include "video-def.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct rational {
-    int num;
-    int den;
-} rational_t;
-
-#include "audio-def.h"
-#include "video-def.h"
+/*
+ * +--------------+
+ * |media_producer|--(produce)-|
+ * +--------------+            -> +-----------+ --(encode)-> +------------+ -- (mux) -> +------------+
+ *                                |media_frame|              |media_packet|             |media_stream|
+ * +--------------+            -- +-----------+ <-(decode)-- +------------+ <-(demux)-- +------------+
+ * |media_consumer|<-(consume)-|
+ * +--------------+
+ */
 
 enum media_type {
     MEDIA_TYPE_AUDIO,
@@ -46,6 +53,15 @@ enum media_type {
     MEDIA_TYPE_MAX
 };
 
+struct media_producer {
+    union {
+        struct audio_producer audio;
+        struct video_producer video;
+    };
+    enum media_type type;
+};
+
+void media_producer_dump_info(struct media_producer *mp);
 
 /**
  * This structure describes decoded (raw) data.
@@ -55,7 +71,9 @@ struct media_frame {
         struct audio_frame audio;
         struct video_frame video;
     };
+    enum media_type type;
 };
+
 
 /**
  * This structure stores compressed data.
@@ -82,7 +100,7 @@ struct media_encoder {
     enum media_type type;
 };
 
-
+void media_encoder_dump_info(struct media_encoder *me);
 
 #ifdef __cplusplus
 }

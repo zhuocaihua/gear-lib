@@ -22,18 +22,19 @@
 #ifndef LIBRTMPC_H
 #define LIBRTMPC_H
 
-#include <gear-lib/libqueue.h>
-#include <gear-lib/libthread.h>
-#include <gear-lib/libmedia-io.h>
+#include <libqueue.h>
+#include <libthread.h>
+#include <libmedia-io.h>
 #include <stdio.h>
 #include <stdint.h>
-#if defined (__linux__) || defined (__CYGWIN__)
+#if defined (OS_LINUX)
 #include <stdbool.h>
 #include <sys/uio.h>
 #endif
 
 #include "flv_mux.h"
 
+#define LIBRTMPC_VERSION "0.1.0"
 
 #ifdef __cplusplus
 extern "C" {

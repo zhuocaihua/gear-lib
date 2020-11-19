@@ -19,11 +19,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  ******************************************************************************/
-#include <gear-lib/liblog.h>
-#include <gear-lib/libfile.h>
-#include <gear-lib/libmacro.h>
-#include <gear-lib/libqueue.h>
-#include <gear-lib/libmedia-io.h>
+#include <liblog.h>
+#include <libfile.h>
+#include <libqueue.h>
+#include <libmedia-io.h>
 #include "sdp.h"
 #include "media_source.h"
 #include <stdio.h>
@@ -59,7 +58,8 @@ static void item_free_hook(void *data)
 
 static inline const uint8_t* h264_find_start_code(const uint8_t* ptr, const uint8_t* end)
 {
-    for (const uint8_t *p = ptr; p + 3 < end; p++) {
+    const uint8_t *p;
+    for (p = ptr; p + 3 < end; p++) {
         if (0x00 == p[0] && 0x00 == p[1] && (0x01 == p[2] || (0x00==p[2] && 0x01==p[3]))) {
             return p;
         }
@@ -112,7 +112,7 @@ exit:
 
 static int h264_file_open(struct media_source *ms, const char *name)
 {
-    struct h264_source_ctx *c = CALLOC(1, struct h264_source_ctx);
+    struct h264_source_ctx *c = calloc(1, sizeof(struct h264_source_ctx));
     if (!c) {
         loge("calloc h264_source_ctx failed!\n");
         return -1;
@@ -141,7 +141,7 @@ static int h264_file_read_frame(struct media_source *ms, void **data, size_t *le
     struct h264_source_ctx *c = (struct h264_source_ctx *)ms->opaque;
     struct item *it = queue_pop(c->q);
     *data = (struct media_packet *)it->opaque.iov_base;
-    *len = it->data.iov_len;
+    *len = it->opaque.iov_len;
     logd("queue_pop ptr=%p, data=%p, len=%d\n", it->opaque.iov_base, *data, it->opaque.iov_len);
     //item_free(c->q, it);
     return 0;

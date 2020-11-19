@@ -22,15 +22,12 @@
 #ifndef LIBQUEUE_H
 #define LIBQUEUE_H
 
-#if defined (__linux__) || defined (__CYGWIN__)
-#include <sys/uio.h>
+#include <libposix.h>
+#ifdef OS_LINUX
 #include <pthread.h>
-#elif defined (__WIN32__) || defined (WIN32) || defined (_MSC_VER)
-#include "libposix4win.h"
-#elif defined (FREERTOS)
-#include "libposix4rtos/libposix4rtos.h"
 #endif
-#include <gear-lib/libmacro.h>
+
+#define LIBQUEUE_VERSION "0.1.0"
 
 /*
  * queue is multi-reader single-writer
